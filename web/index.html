@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tembo Stays — Smart Hospitality 2026</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Outfit:wght@300;400;600;700&family=DM+Mono&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --clay: #c8593a;
+      --sand: #f2e8d5;
+      --dusk: #1c1610;
+      --gold: #d4a843;
+      --sage: #7a9e7e;
+      --cream: #faf6ef;
+      --white: #ffffff;
+      --border: rgba(28, 22, 16, 0.1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--cream);
+      color: var(--dusk);
+    }
+
+    nav {
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      font-style: italic;
+    }
+
+    .logo span {
+      color: var(--clay);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+    }
+
+    .card {
+      background: var(--dusk);
+      color: var(--sand);
+      border-radius: 30px;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .lock-circle {
+      width: 120px;
+      height: 120px;
+      background: var(--clay);
+      border-radius: 50%;
+      margin: 0 auto 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      cursor: pointer;
+      transition: 0.4s;
+    }
+
+    .lock-circle.active {
+      background: var(--sage);
+      box-shadow: 0 0 30px var(--sage);
+    }
+
+    .admin-panel {
+      background: var(--white);
+      border-radius: 30px;
+      padding: 40px;
+      border: 1px solid var(--border);
+    }
+
+    .log-box {
+      background: #000;
+      color: #0f0;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.8rem;
+      padding: 15px;
+      border-radius: 12px;
+      height: 180px;
+      overflow-y: auto;
+      margin-top: 20px;
+    }
+
+    #toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--dusk);
+      color: white;
+      padding: 12px 25px;
+      border-radius: 50px;
+      opacity: 0;
+      transition: 0.4s;
+      z-index: 1000;
+    }
+
+    #toast.show {
+      opacity: 1;
+      bottom: 50px;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="logo">TEMBO <span>STAYS</span></div>
+    <div><i class="fa-solid fa-signal" style="color: var(--sage)"></i> IoT Live</div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <div id="mainLock" class="lock-circle" onclick="unlock()"><i class="fa-solid fa-key"></i></div>
+      <h3>Tap to Unlock Door</h3>
+      <div style="margin-top: 20px; background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 15px;">
+        <p style="color: var(--gold); font-size: 0.7rem; text-transform: uppercase;">Loyalty Points</p>
+        <span id="pts" style="font-size: 1.5rem; font-weight: 700;">850</span>
+      </div>
+    </div>
+
+    <div class="admin-panel">
+      <h3>Operational ROI Dashboard</h3>
+      <div
+        style="
+          background: var(--cream);
+          padding: 15px;
+          border-radius: 12px;
+          border-left: 4px solid var(--clay);
+          margin-top: 10px;
+        "
+      >
+        <p style="font-size: 0.7rem; color: var(--clay); font-weight: 700;">ENERGY SAVINGS</p>
+        <h2 id="roiDisplay">KSh 42,350</h2>
+      </div>
+      <div id="logs" class="log-box"><p>&gt; System Ready...</p></div>
+    </div>
+  </div>
+
+  <div id="toast">Door Unlocked!</div>
+
+  <script>
+    const supabaseUrl = 'https://qfzkhqswbzwfnzilmmcd.supabase.co';
+    const supabaseKey = 'sb_publishable_pkTIpxur95DfRcgneCuwuQ_jyGviS8Xm';
+    const db = supabase.createClient(supabaseUrl, supabaseKey);
+
+    async function unlock() {
+      const lock = document.getElementById('mainLock');
+      const logs = document.getElementById('logs');
+      const roiEl = document.getElementById('roiDisplay');
+
+      lock.classList.add('active');
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+
+      const time = new Date().toLocaleTimeString();
+      logs.innerHTML += `<p>&gt; [${time}] IOT_LOCK: UNLOCKED by Sarah</p>`;
+      logs.scrollTop = logs.scrollHeight;
+
+      const pointsElement = document.getElementById('pts');
+      const newPoints = parseInt(pointsElement.innerText, 10) + 10;
+      pointsElement.innerText = newPoints;
+
+      await db
+        .from('guest_loyalty_data')
+        .update({ loyalty_points: newPoints })
+        .eq('profile_id', 'sarah_2026_id');
+
+      const currentROI = parseInt(roiEl.innerText.replace(/\D/g, ''), 10);
+      roiEl.innerText = `KSh ${(currentROI + 150).toLocaleString()}`;
+
+      setTimeout(() => {
+        lock.classList.remove('active');
+        toast.classList.remove('show');
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
